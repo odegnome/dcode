@@ -1,73 +1,76 @@
 <mujoco model="quadrotor">
-    <default>
-        <geom rgba=".2 .9 .9 1"/>
-    </default>
     <asset>
         <texture type="skybox" builtin="gradient" rgb1="1 1 1"
             rgb2=".6 .8 1" width="256" height="256"/>
     </asset>
-    <option timestep="0.01" density="1.2"/>
+    <option timestep="0.001" density="1.2"/>
     <worldbody>
-        <!-- <light pos="0 0 6" dir="0 0 -1" diffuse="1 1 1"/> -->
-
         <light pos="5 5 6" dir="-1 -1 -1" castshadow="false" diffuse=".3 .3 .3"/>
         <!-- <light pos="5 -5 6" dir="-1 1 -1" castshadow="false"/>
         <light pos="-5 5 6" dir="1 -1 -1" castshadow="false"/> -->
         <light pos="-5 -5 6" dir="1 1 -1" castshadow="false" diffuse=".3 .3 .3"/>
 
-        <geom name="floor" type="plane" size="5 5 .1" rgba="1 0 0 1"/>
-        <site name="origin" type="sphere" size=".1" rgba="0 0 0 1"/>
+        <geom name="floor" type="plane" size="5 5 .1" rgba="1 0 0 .5"/>
+        <!-- <site name="origin" type="sphere" size=".1" rgba="0 0 0 1"/>
         <site name="posx" type="sphere" size=".1" pos=".2 0 0" rgba="0 0 1 1"/>
-        <site name="posy" type="sphere" size=".1" pos="0 .2 0" rgba="0 1 0 1"/>
+        <site name="posy" type="sphere" size=".1" pos="0 .2 0" rgba="0 1 0 1"/> -->
 
-        <camera name="fixed_camera" mode="fixed" pos="-10 0 3"/>
+        <camera name="fixed_camera" mode="fixed" pos="-15 0 3"/>
 
         <!-- Walls -->
         <body pos="0 0 6" name="roof">
-            <geom type="box" size="4.5 4.5 .01" rgba="1 1 .6 0.2"/>
+            <geom type="box" size="4.5 4.5 .01" rgba="1 1 1 0.2"/>
         </body>
         <body pos="0 4.5 3" name="wall1">
-            <geom type="box" size="4.5 0.01 3" rgba="1 1 .6 0.2"/>
+            <geom type="box" size="4.5 0.01 3" rgba="1 1 1 0.2"/>
         </body>
         <body pos="0 -4.5 3" name="wall2">
-            <geom type="box" size="4.5 0.01 3" rgba="1 1 .6 0.2"/>
+            <geom type="box" size="4.5 0.01 3" rgba="1 1 1 0.2"/>
         </body>
         <body pos="4.5 0 3" name="wall3">
-            <geom type="box" size="0.01 4.5 3" rgba="1 1 .6 0.2"/>
+            <geom type="box" size="0.01 4.5 3" rgba="1 1 1 0.2"/>
         </body>
         <body pos="-4.5 0 3" name="wall4">
-            <geom type="box" size="0.01 4.5 3" rgba="1 1 .6 0.2"/>
+            <geom type="box" size="0.01 4.5 3" rgba="1 1 1 0.2"/>
         </body>
-
 
         <!-- Quadrotor -->
         <body pos="0 0 3" name="quad">
             <joint type="free"/>
-            <geom name="center" type="sphere" size=".1" rgba="0 0 0.8 1" mass="0"/>
-            <geom name="quadbody" type="box" size=".3 .2 .05" mass="0.1"/>
+            <geom name="quadbody" type="box" size=".2 .2 .03" mass="0.1" rgba=".2 .9 .9 1"/>
 
-            <body pos=".3 .2 0" name="quadarm1" euler="0 0 45">
-                <geom name='arm1' type="box" pos="0 0 0" size=".2 .05 .05" mass=".025"/>
-                <geom name="rotor1" type="sphere" pos=".2 0 0" size=".1"/>
+            <body pos=".2 .2 0" name="quadarm1" euler="0 0 45">
+                <geom name="arm1" type="box" pos="0 0 0" size=".2 .05 .01" mass=".025"/>
+                <geom name="rotor1" type="cylinder" pos=".2 0 0" size=".1 .02" rgba="0 0 1 1"/>
+                <site name="motor1" type="cylinder" pos=".2 0 0" size=".08 .01" rgba="0 0 0 0"/>
             </body>
-            <body pos="-0.3 .2 0" name="quadarm2" euler="0 0 -45">
-                <geom name='arm2' type="box" pos="0 0 0" size=".2 .05 .05" mass="0.025"/>
-                <geom name="rotor2" type="sphere" pos="-.2 0 0" size=".1"/>
+            <body pos="-0.2 .2 0" name="quadarm2" euler="0 0 -45">
+                <geom name='arm2' type="box" pos="0 0 0" size=".2 .05 .01" mass="0.025"/>
+                <geom name="rotor2" type="cylinder" pos="-0.2 0 0" size=".1 .02" rgba="0 0 1 1"/>
+                <site name="motor2" type="cylinder" pos="-0.2 0 0" size=".08 .01" rgba="0 0 0 0"/>
             </body>
-            <body pos="-0.3 -0.2 0" name="quadarm3" euler="0 0 45">
-                <geom name='arm3' type="box" pos="0 0 0" size="0.2 0.05 0.05" mass="0.025"/>
-                <geom name="rotor3" type="sphere" pos="-0.2 0 0" size=".1"/>
+            <body pos="-0.2 -0.2 0" name="quadarm3" euler="0 0 45">
+                <geom name='arm3' type="box" pos="0 0 0" size="0.2 0.05 0.01" mass="0.025"/>
+                <geom name="rotor3" type="cylinder" pos="-0.2 0 0" size=".1 .02" rgba="0 0 1 1"/>
+                <site name="motor3" type="cylinder" pos="-0.2 0 0" size=".08 .01" rgba="0 0 0 0"/>
             </body>
-            <body pos=".3 -0.2 0" name="quadarm4" euler="0 0 -45">
-                <geom name='arm4' type="box" pos="0 0 0" size="0.2 0.05 0.05" mass="0.025"/>
-                <geom name="rotor4" type="sphere" pos=".2 0 0" size=".1"/>
+            <body pos=".2 -0.2 0" name="quadarm4" euler="0 0 -45">
+                <geom name='arm4' type="box" pos="0 0 0" size=".2 0.05 0.01" mass="0.025"/>
+                <geom name="rotor4" type="cylinder" pos=".2 0 0" size=".1 .02" rgba="0 0 1 1"/>
+                <site name="motor4" type="cylinder" pos=".2 0 0" size=".08 .01" rgba="0 0 0 0"/>
             </body>
         </body>
-
         </worldbody>
+    
+    <actuator>
+        <motor ctrllimited="true" ctrlrange="0.0 1.0" gear="0 0. 1. 0. 0. -0.1" site="motor1"/>
+        <motor ctrllimited="true" ctrlrange="0.0 1.0" gear="0 0. 1. 0. 0. 0.1" site="motor2"/>
+        <motor ctrllimited="true" ctrlrange="0.0 1.0" gear="0 0. 1. 0. 0. -0.1" site="motor3"/>
+        <motor ctrllimited="true" ctrlrange="0.0 1.0" gear="0 0. 1. 0. 0. 0.1" site="motor4"/>
+    </actuator>
 
     <!-- Collisions between walls and roof is excluded from calculation -->
-    <!-- This should prevent unnecessary compute -->
+    <!-- This should prevent unnecessary computation -->
     <contact>
         <exclude body1="roof" body2="wall1"/>
         <exclude body1="roof" body2="wall2"/>
