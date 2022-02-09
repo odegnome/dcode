@@ -1,4 +1,5 @@
 <mujoco model="quadrotor">
+    <compiler inertiafromgeom="true"/>
     <asset>
         <texture type="skybox" builtin="gradient" rgb1="1 1 1"
             rgb2=".6 .8 1" width="256" height="256"/>
@@ -36,8 +37,9 @@
 
         <!-- Quadrotor -->
         <body pos="0 0 3" name="quad">
-            <joint type="free"/>
+            <joint type="free" pos="0 0 0"/>
             <geom name="quadbody" type="box" size=".2 .2 .03" mass="0.1" rgba=".2 .9 .9 1"/>
+            <site name="quadcenter" type="box" size=".01 .01 .03" rgba=".2 .9 .9 0"/>
 
             <body pos=".2 .2 0" name="quadarm1" euler="0 0 45">
                 <geom name="arm1" type="box" pos="0 0 0" size=".2 .05 .01" mass=".025"/>
@@ -60,14 +62,20 @@
                 <site name="motor4" type="cylinder" pos=".2 0 0" size=".08 .01" rgba="0 0 0 0"/>
             </body>
         </body>
-        </worldbody>
+    </worldbody>
     
+    <!-- Rotors -->
     <actuator>
         <motor ctrllimited="true" ctrlrange="0.0 1.0" gear="0 0. 1. 0. 0. -0.1" site="motor1"/>
         <motor ctrllimited="true" ctrlrange="0.0 1.0" gear="0 0. 1. 0. 0. 0.1" site="motor2"/>
         <motor ctrllimited="true" ctrlrange="0.0 1.0" gear="0 0. 1. 0. 0. -0.1" site="motor3"/>
         <motor ctrllimited="true" ctrlrange="0.0 1.0" gear="0 0. 1. 0. 0. 0.1" site="motor4"/>
     </actuator>
+
+    <!-- <sensor>
+        <accelerometer site="quadcenter"/>
+        <gyro site="quadcenter"/>
+    </sensor> -->
 
     <!-- Collisions between walls and roof is excluded from calculation -->
     <!-- This should prevent unnecessary computation -->
