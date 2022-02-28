@@ -51,7 +51,7 @@
                 <site name="motor1" type="cylinder" pos=".1 .0 0" size=".05 .002" rgba="0 0 0 0"/>
                 <site name="prox-ne1" group="3" type="box" pos=".05 .01 0" size="0.001 .001 .001" euler="-90 0 0" rgba="1 0 0 1"/>
                 <site name="prox-ne2" group="3" type="box" pos=".05 -.01 0" size="0.001 .001 .001" euler="90 0 0" rgba="1 0 0 1"/>
-                <site name="prox-ne" group="4" type="box" pos=".1 0 0" size="0.001 .001 .001" euler="0 90 0" rgba="1 0 0 1"/>
+                <!-- <site name="prox-ne" group="4" type="box" pos=".1 0 0" size="0.001 .001 .001" euler="0 90 0" rgba="1 0 0 1"/> -->
             </body>
             <body pos="-0.1 .1 0" name="quadarm2" euler="0 0 -45">
                 <geom name='arm2' type="box" pos="0 0 0" size=".1 .01 .005" mass="0.01"/>
@@ -59,7 +59,7 @@
                 <site name="motor2" type="cylinder" pos="-0.1 0 0" size=".05 .002" rgba="0 0 0 0"/>
                 <site name="prox-se1" group="3" type="box" pos="-.05 .01 0" size="0.001 .001 .001" euler="-90 0 0" rgba="1 0 0 1"/>
                 <site name="prox-se2" group="3" type="box" pos="-.05 -.01 0" size="0.001 .001 .001" euler="90 0 0" rgba="1 0 0 1"/>
-                <site name="prox-se" group="4" type="box" pos="-.1 0 0" size="0.001 .001 .001" euler="0 -90 0" rgba="1 0 0 1"/>
+                <!-- <site name="prox-se" group="4" type="box" pos="-.1 0 0" size="0.001 .001 .001" euler="0 -90 0" rgba="1 0 0 1"/> -->
             </body>
             <body pos="-0.1 -0.1 0" name="quadarm3" euler="0 0 45">
                 <geom name='arm3' type="box" pos="0 0 0" size="0.1 0.01 0.005" mass="0.01"/>
@@ -67,7 +67,7 @@
                 <site name="motor3" type="cylinder" pos="-0.1 0 0" size=".05 .002" rgba="0 0 0 0"/>
                 <site name="prox-sw1" group="3" type="box" pos="-.05 .01 0" size="0.001 .001 .001" euler="-90 0 0" rgba="1 0 0 1"/>
                 <site name="prox-sw2" group="3" type="box" pos="-.05 -.01 0" size="0.001 .001 .001" euler="90 0 0" rgba="1 0 0 1"/>
-                <site name="prox-sw" group="4" type="box" pos="-.1 0 0" size="0.001 .001 .001" euler="0 -90 0" rgba="1 0 0 1"/>
+                <!-- <site name="prox-sw" group="4" type="box" pos="-.1 0 0" size="0.001 .001 .001" euler="0 -90 0" rgba="1 0 0 1"/> -->
             </body>
             <body pos=".1 -0.1 0" name="quadarm4" euler="0 0 -45">
                 <geom name='arm4' type="box" pos="0 0 0" size=".1 0.01 0.005" mass="0.01"/>
@@ -75,7 +75,7 @@
                 <site name="motor4" type="cylinder" pos=".1 0 0" size=".05 .002" rgba="0 0 0 0"/>
                 <site name="prox-nw1" group="3" type="box" pos=".05 .01 0" size="0.001 .001 .001" euler="-90 0 0" rgba="1 0 0 1"/>
                 <site name="prox-nw2" group="3" type="box" pos=".05 -.01 0" size="0.001 .001 .001" euler="90 0 0" rgba="1 0 0 1"/>
-                <site name="prox-nw" group="4" type="box" pos=".1 0 0" size="0.001 .001 .001" euler="0 90 0" rgba="1 0 0 1"/>
+                <!-- <site name="prox-nw" group="4" type="box" pos=".1 0 0" size="0.001 .001 .001" euler="0 90 0" rgba="1 0 0 1"/> -->
             </body>
         </body>
     </worldbody>

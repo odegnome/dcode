@@ -2,7 +2,7 @@ from tensorflow.keras import Sequential, layers
 from tensorflow.keras.callbacks import TensorBoard 
 
 class Agent:
-    def __init__(self, learning_rate=0.001):
+    def __init__(self, learning_rate=0.001, gamma=0.999, epsilon=1):
         self.lr = learning_rate
     
     def define_models(self):
