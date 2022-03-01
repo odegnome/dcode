@@ -30,3 +30,15 @@ class QuadObservables(composer.Observables):
         """Sensor data including range finder and IMU"""
         range_sensors = self._entity.mjcf_model.find_all('sensor')
         return observable.MJCFFeature('sensordata', range_sensors)
+
+class FlyWithoutCollision(composer.Task):
+    def __init__(self, quad):
+        self._quad = quad 
+        
+        # Enable quadrotor observables
+        self._quad.observables.rotor_values.enabled = True 
+        self._quad.observables.sensor_values.enabled = True 
+
+    # Need to add task observable.
+    # It should observe collision and if any end the episode.
+

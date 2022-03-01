@@ -1,3 +1,5 @@
 dissertation/
 .DS_Store
 simulation/
+quadrotor.xml
+test.py
