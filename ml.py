@@ -21,6 +21,7 @@ class DQNAgent:
     def __init__(self, learning_rate=0.001, gamma=0.99):
         self.lr = learning_rate
         self.gamma = gamma
+        self.define_model()
 
     def define_model(self):
         model = Sequential()

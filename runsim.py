@@ -1,6 +1,7 @@
 from dm_control import mujoco
 from PIL import Image
 import os
+from woComposer import QuadEnv
 
 def sim_dir_cleanup():
     os.system('python3 clearsimulation.py')
@@ -9,8 +10,11 @@ def sim_dir_cleanup():
 
 physics = mujoco.Physics.from_xml_path('quad.xml')
 
-duration = 1
-framerate = 30
+FRAMERATE = 30
+REPLAY_MEMORY_SIZE = 2400
+MAX_EPISODES = 1000
+MAX_EPISODE_LEN = 24000 # 60(sec)/0.005(timestep)*10(12,000 otherwise)
+replay_memory = []
 
 def simulate():
     flie = open('logs.txt','w')
@@ -41,41 +45,5 @@ def detect_contact(physics):
         print(name_geom1, name_geom2)
     return 0
 
-def dqn():
-    replay_memory = []
-    REPLAY_MEMORY_SIZE = 5000
-    MAX_EPISODES = 1000
-    MAX_EPISODE_LEN = 1200 # 60(sec)/0.005(timestep)*10(12,000 otherwise)
-
-    # Initialize Q function with random weights
-
-    for episode in range(1,MAX_EPISODES):
-        # Initialize seq s1 = {x1} and preprocessed seq phi1 = phi(s1)
-
-        for timestep in range(1, MAX_EPISODE_LEN):
-
-            prob = random.random()
-            if prob < epsilon:
-                # select a random action. Choose random value for each rotor
-                pass
-            else:
-                # select action greedily
-                pass
-            
-            # Take action and observe reward and next state
-
-            # set st+1 = s_t,a_t
-
-            # store (s_t,a_t,r_t,s_t+1) in replay_memory
-            replay_memory.append(tuple(state,action,reward,next_state))
-
-            # sample random minibatch from replay_memory
-
-            # if next state is terminal then set y_j to reward
-            # else set it to learned value
-            if done: # new_state is terminal
-                y_j = reward
-            else:
-                y_j = reward + gamma*max(Q[new_state])
-
-            # Perform gradient descent on (y_j - Q(s_j,a_j))^2
+def main():
+    env = QuadEnv()

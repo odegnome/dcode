@@ -5,7 +5,7 @@ Reference for Mujoco
 
 :Version: 0.1
 
-Definition lists:
+Definition list:
 
 Bodies
   They specify *something* with mass and inertia. Think of it like a point
