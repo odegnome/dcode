@@ -4,7 +4,7 @@
         <texture type="skybox" builtin="gradient" rgb1="1 1 1"
             rgb2=".6 .8 1" width="256" height="256"/>
     </asset>
-    <option timestep="0.002" density="1.2" gravity="0 0 -9.81"/>
+    <option timestep="0.005" density="1.2" gravity="0 0 -9.81"/>
     <worldbody>
         <light pos="5 5 6" dir="-1 -1 -1" castshadow="false" diffuse=".3 .3 .3"/>
         <light pos="-5 -5 6" dir="1 1 -1" castshadow="false" diffuse=".3 .3 .3"/>
