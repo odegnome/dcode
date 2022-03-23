@@ -4,3 +4,7 @@ simulation/
 quadrotor.xml
 test.py
 *.mpg
+training/
+images/
+logs/
+tests/
