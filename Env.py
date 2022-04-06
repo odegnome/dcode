@@ -2,6 +2,9 @@ from dm_control import mujoco
 import numpy as np
 import tensorflow as tf
 
+OBS_SPACE = 34
+ACTION_SPACE = 4
+
 class QuadEnv:
     def __init__(self, xml_path):
         self.physics = mujoco.Physics.from_xml_path(xml_path)
@@ -16,22 +19,33 @@ class QuadEnv:
         sensor_data = self.physics.data.sensordata
         orientation = self.physics.data.xquat[6]
         velocities = self.physics.data.qvel
-        actuators = self.physics.data.actuator_force
-        state = np.concatenate((sensor_data, orientation, velocities, actuators))
+        state = np.concatenate((sensor_data, orientation, velocities))
         return state, reward, done, []
     
     def reset(self):
         # Currently is reset to stationary state.
         # Need to add other initial states.
-        self.physics.reset()
+        controls = [
+            [0., 0., 0., 0., 0., 0.],
+            [0.0, 0.0, 0.0, 0.0, 2., 3.],
+            [0.36, 0.36, 0.33, 0.33, 2., 3.],
+            [0.33, 0.33, 0.36, 0.36, -2., 3.]
+        ]
+        index = np.random.randint(0,4)
+        with self.physics.reset_context():
+            self.physics.set_control(controls[index][0:4])
+            self.physics.data.qvel[1] = controls[index][4]
+            self.physics.data.qvel[2] = controls[index][5]
 
         # Observation
         sensor_data = self.physics.data.sensordata
         orientation = self.physics.data.xquat[6]
         velocities = self.physics.data.qvel
-        actuators = self.physics.data.actuator_force
-        state = np.concatenate((sensor_data, orientation, velocities, actuators))
+        state = np.concatenate((sensor_data, orientation, velocities))
         return state
+    
+    def render(self):
+        return self.physics.render(height=720, width=1024, camera_id='fixed_camera')
 
 
 class OUActionNoise:
@@ -153,3 +167,23 @@ class Buffer:
         next_state_batch = tf.convert_to_tensor(self.next_state_buffer[batch_indices])
 
         self.update(state_batch, action_batch, reward_batch, next_state_batch)
+
+def get_actor():
+    actor_input = tf.keras.layers.Input(shape=(OBS_SPACE,))
+    out = tf.keras.layers.Dense(64,activation='tanh')(actor_input)
+    out = tf.keras.layers.Dense(64,activation='tanh')(out)
+    output = tf.keras.layers.Dense(4)(out)
+
+    model = tf.keras.Model(actor_input, output)
+    return model
+
+def get_critic():
+    critic_input_1 = tf.keras.layers.Input(shape=(OBS_SPACE,))
+    critic_input_2 = tf.keras.layers.Input(shape=(ACTION_SPACE,))
+    critic_input = tf.keras.layers.Concatenate()([critic_input_1, critic_input_2])
+    out = tf.keras.layers.Dense(64,activation='tanh')(critic_input)
+    out = tf.keras.layers.Dense(64,activation='tanh')(out)
+    output = tf.keras.layers.Dense(1)(out)
+
+    model = tf.keras.Model([critic_input_1, critic_input_2], output)
+    return model

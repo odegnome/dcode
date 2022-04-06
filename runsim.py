@@ -4,6 +4,7 @@ import os
 
 # to create a video
 # ffmpeg -framerate 30 -i 'simulation/frame%03d.jpeg' video.mpg
+# ffmpeg -framerate 30 -pattern_type glob -i 'simulation/*.jpeg' video.mpg
 
 framerate = 30
 duration = 2
@@ -15,21 +16,32 @@ def sim_dir_cleanup():
     if not os.access('simulation',os.F_OK):
         os.mkdir('simulation')
 
+controls = [
+    [0., 0., 0., 0., 0., 0.],
+    [0.0, 0.0, 0.0, 0.0, 2., 3.],
+    [0.36, 0.36, 0.33, 0.33, 2., 3.],
+    [0.33, 0.33, 0.36, 0.36, -2., 3.]
+]
 def simulate():
     count = 0
-    with physics.reset_context():
-        physics.set_control([0.44,0.44,0.33,0.33])
+    for index in range(len(controls)):
+        counter = 0
+        # physics.reset()
+        with physics.reset_context():
+            physics.set_control(controls[index][0:4])
+            physics.data.qvel[1] = controls[index][4]
+            physics.data.qvel[2] = controls[index][5]
 
-    while round(physics.data.time,3) < duration:
-        physics.step()
-        if count < physics.data.time * framerate:
-            pixels = physics.render(height=480,width=640,camera_id='fixed_camera')
-            im = Image.fromarray(pixels)
-            im.save(f"simulation/frame{count:03}.jpeg")
-            count += 1
-        if physics.data.ncon > 0:
-            detect_contact(physics)
-            break
+        print(physics.data.time, end=' | ')
+        while round(physics.data.time,3) < duration:
+            physics.step()
+            if counter < physics.data.time * framerate:
+                pixels = physics.render(height=720,width=1024,camera_id='fixed_camera')
+                im = Image.fromarray(pixels)
+                im.save(f"simulation/frame{count:03}.jpeg")
+                count += 1
+                counter += 1
+        print(physics.data.time)
     print(count)
 
 def detect_contact(physics):
@@ -42,5 +54,6 @@ def detect_contact(physics):
         name_geom2 = physics.model.id2name(id_geom2,'geom')
         print(name_geom1, name_geom2)
     return 0
+
 sim_dir_cleanup()
 simulate()
