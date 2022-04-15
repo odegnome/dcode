@@ -1,4 +1,4 @@
-from dm_control import mujoco, composer 
+from dm_control import composer 
 from dm_control import mjcf
 from dm_control.composer.observation import observable
 
@@ -8,6 +8,7 @@ class QuadEnv(composer.Entity):
     
     def _build_observables(self):
         return QuadObservables(self)
+
     @property
     def mjcf_model(self):
         return self._model
@@ -46,6 +47,20 @@ class FlyWithoutCollision(composer.Task):
         self._quad.observables.joint_velocity.enabled = True
         self._quad.observables.orientation.enabled = True
 
+        # Arena
+        self._arena = composer.Arena()
+        self._task_observables = {}
+
     # Need to add task observable.
     # It should observe collision and if any end the episode.
+    @property
+    def root_entity(self):
+        return self._quad
+
+    @property
+    def task_observables(self):
+        return self._task_observables
+    
+    def get_reward(self, physics):
+        return 0.0
 
