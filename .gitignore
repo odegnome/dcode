@@ -10,3 +10,4 @@ logs/
 tests/
 videos/
 withtorch/
+.ipynb_checkpoints/
