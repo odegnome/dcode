@@ -2,7 +2,7 @@ from dm_control import mujoco
 import numpy as np
 import tensorflow as tf
 
-OBS_SPACE = 34
+OBS_SPACE = 24
 ACTION_SPACE = 4
 
 class QuadEnv:
@@ -14,17 +14,18 @@ class QuadEnv:
         self.physics.step()
         done = True if self.physics.data.ncon > 0 else False
         reward = 1 if not done else -1000
+        state = self.get_observation()
+        return state, reward, done, []
 
+    def get_observation(self):
         # Observation
         sensor_data = self.physics.data.sensordata
         orientation = self.physics.data.xquat[6]
-        velocities = self.physics.data.qvel
-        state = np.concatenate((sensor_data, orientation, velocities))
-        return state, reward, done, []
+        # velocities = self.physics.data.qvel
+        state = np.concatenate((sensor_data, orientation))#, velocities))
+        return state
     
     def reset(self):
-        # Currently is reset to stationary state.
-        # Need to add other initial states.
         controls = [
             [0., 0., 0., 0., 0., 0.],
             [0.0, 0.0, 0.0, 0.0, 2., 3.],
@@ -37,12 +38,7 @@ class QuadEnv:
             self.physics.data.qvel[1] = controls[index][4]
             self.physics.data.qvel[2] = controls[index][5]
 
-        # Observation
-        sensor_data = self.physics.data.sensordata
-        orientation = self.physics.data.xquat[6]
-        velocities = self.physics.data.qvel
-        state = np.concatenate((sensor_data, orientation, velocities))
-        return state
+        return self.get_observation()
     
     def render(self):
         return self.physics.render(height=720, width=1024, camera_id='fixed_camera')
@@ -77,7 +73,7 @@ class OUActionNoise:
             self.x_prev = np.zeros_like(self.mean)
 
 class Buffer:
-    def __init__(self, models, optimizers, gamma=0.99, OBS_SPACE=34,
+    def __init__(self, models, optimizers, gamma=0.99, OBS_SPACE=24,
                 ACTION_SPACE=4, buffer_capacity=5000, batch_size=128):
         # Memory for Experience Replay
         self.buffer_capacity = buffer_capacity

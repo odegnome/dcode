@@ -6,7 +6,7 @@ import os
 
 env = QuadEnv('quad.xml')
 
-actor = tf.keras.models.load_model('training/actor1000.tf/')
+actor = tf.keras.models.load_model('training/withinfo/actor500/')
 
 def get_action(state):
     tf_state = tf.expand_dims(tf.convert_to_tensor(state), 0)

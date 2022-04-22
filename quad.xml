@@ -93,9 +93,9 @@
 
     <!-- Proximity Sensors -->
     <sensor>
-        <accelerometer site="quadcenter"/>
-        <gyro site="quadcenter"/>
-        <rangefinder cutoff="3" site="prox-n"/>
+        <accelerometer name='acc' site="quadcenter"/>
+        <gyro name='gyro' site="quadcenter"/>
+        <rangefinder name="prox-n" cutoff="3" site="prox-n"/>
         <rangefinder cutoff="3" site="prox-s"/>
         <rangefinder cutoff="3" site="prox-e"/>
         <rangefinder cutoff="3" site="prox-w"/>
@@ -112,7 +112,7 @@
         <rangefinder cutoff="3" site="prox-sw2"/>
         <!-- <rangefinder cutoff="3" site="prox-nw"/> -->
         <rangefinder cutoff="3" site="prox-nw1"/>
-        <rangefinder cutoff="3" site="prox-nw2"/>
+        <rangefinder name='prox-nw2' cutoff="3" site="prox-nw2"/>
     </sensor>
 
     <!-- Collisions between walls and roof is excluded from calculation -->

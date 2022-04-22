@@ -10,10 +10,12 @@ import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 from Env import QuadEnv, OUActionNoise, Buffer, get_actor, get_critic
+import pickle
+from sys import exit
 
 np.random.seed(103473)
 # Gives the shape of the observation space
-OBS_SPACE = 30
+OBS_SPACE = 24
 # Gives the shape of the action space
 ACTION_SPACE = 4
 # Lower and upper bound of quadrotor actuators
@@ -58,21 +60,20 @@ actor_lr = 0.001
 critic_optimizer = tf.keras.optimizers.Adam(critic_lr)
 actor_optimizer = tf.keras.optimizers.Adam(actor_lr)
 
-MAX_EPISODES = 500
+MAX_EPISODES = 100
 MAX_EPISODE_LEN = 12000
 BATCH_SIZE = 64
 # Discount factor for future rewards
 gamma = 0.99
 # Used to update target networks
 tau = 0.005
-epsilon = 1
 buffer = Buffer(
         models=[actor_model, critic_model, target_actor, target_critic],
         optimizers=[actor_optimizer,critic_optimizer],
         gamma=gamma,
         OBS_SPACE=OBS_SPACE,
         ACTION_SPACE=ACTION_SPACE,
-        buffer_capacity=10000,
+        buffer_capacity=50000,
         batch_size=BATCH_SIZE
     )
 
@@ -81,6 +82,8 @@ buffer = Buffer(
 ep_reward_list = []
 # To store average reward history of last few episodes
 avg_reward_list = []
+# Lin acc and Ang vel data
+debug_info = []
 for episode in range(MAX_EPISODES+1):
     prev_state = env.reset()
     episodic_reward = 0
@@ -94,25 +97,28 @@ for episode in range(MAX_EPISODES+1):
         buffer.record((prev_state, action, reward, state))
         episodic_reward += reward
 
+        # Record lin/ang acc or vel
+        debug_info.append(state[:6])
+        logging.info(f'info array: {len(debug_info)}')
+
         buffer.learn()
         update_target(target_actor.variables, actor_model.variables, tau)
         update_target(target_critic.variables, critic_model.variables, tau)
 
+        prev_state = state
         # End this episode when `done` is True
         if done:
             break
 
-        prev_state = state
-
     if episode%100 == 0:
-        actor_model.save(f'training/actor{episode}', save_format='tf')
-        critic_model.save(f'training/critic{episode}', save_format='tf')
-        target_actor.save(f'training/tactor{episode}', save_format='tf')
-        target_critic.save(f'training/tcritic{episode}', save_format='tf')
+        actor_model.save(f'training/temp/actor{episode}', save_format='tf')
+        critic_model.save(f'training/temp/critic{episode}', save_format='tf')
+        target_actor.save(f'training/temp/tactor{episode}', save_format='tf')
+        target_critic.save(f'training/temp/tcritic{episode}', save_format='tf')
         plt.plot(avg_reward_list)
         plt.xlabel("Episode")
         plt.ylabel("Avg. Epsiodic Reward")
-        plt.savefig(f'images/rewards{episode}.png')
+        plt.savefig(f'images/temp/rewards{episode}.png')
 
     ep_reward_list.append(episodic_reward)
 
@@ -120,3 +126,6 @@ for episode in range(MAX_EPISODES+1):
     avg_reward = np.mean(ep_reward_list[-40:])
     print("Episode * {} * Avg Reward is ==> {} and Episode Reward ==> {}".format(episode, avg_reward, episodic_reward))
     avg_reward_list.append(avg_reward)
+
+with open('logs/info', 'wb') as fp:
+    pickle.dump(debug_info, fp)
