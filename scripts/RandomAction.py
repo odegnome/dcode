@@ -1,18 +1,17 @@
-from random import random
-import tensorflow as tf
-from Env import QuadEnv, get_actor
 import logging
+logging.basicConfig(
+    filename='../logs/RandomAction.log',
+    filemode='w',
+    level=logging.INFO,
+    format='%(levelname)s: %(message)s'
+)
 import numpy as np
 import os
 from PIL import Image
+from dm_control.utils.transformations import quat_to_euler
+from Env import QuadEnv
 
 os.system('python3 clearsimulation.py')
-logging.basicConfig(
-    filename='logs/RandomAction.log',
-    filemode='w',
-    format='%(level)s: %(message)s',
-    level=logging.INFO
-)
 
 rng = np.random.default_rng(478203)
 def random_action():
@@ -30,9 +29,12 @@ while not done:
     if count < env.physics.data.time * FRAMERATE:
         im = env.render()
         im = Image.fromarray(im)
-        im.save(f'simulation/frame{count:03}.jpeg')
+        im.save(f'../simulation/frame{count:03}.jpeg')
         count += 1
     state, reward, done, info = env.step(random_action())
-im = env.render()
-im = Image.fromarray(im)
-im.save(f'simulation/frame{count:03}.jpeg')
+    atitude_quat = env.physics.data.xquat[6].copy()
+    atitude_euler = quat_to_euler(atitude_quat)
+    x,y,z = atitude_euler
+    logging.info(f'{atitude_euler}')
+    if x > 1.4 or y > 1.4 or z > 3:
+        done = True

@@ -1,6 +1,7 @@
 from dm_control import mujoco
 import numpy as np
 import tensorflow as tf
+from dm_control.utils.transformations import quat_to_euler
 
 OBS_SPACE = 24
 ACTION_SPACE = 4
@@ -16,6 +17,9 @@ class QuadEnv:
         reward = 1 if not done else -1000
         state = self.get_observation()
         return state, reward, done, []
+    
+    def get_reward(self):
+        return
 
     def get_observation(self):
         # Observation
@@ -148,6 +152,7 @@ class Buffer:
         self.actor_optimizer.apply_gradients(
             zip(actor_grad, self.actor_model.trainable_variables)
         )
+        return (critic_loss, actor_loss)
         
     def learn(self):
         # Get sampling range
@@ -162,7 +167,8 @@ class Buffer:
         reward_batch = tf.cast(reward_batch, dtype=tf.float32)
         next_state_batch = tf.convert_to_tensor(self.next_state_buffer[batch_indices])
 
-        self.update(state_batch, action_batch, reward_batch, next_state_batch)
+        losses = self.update(state_batch, action_batch, reward_batch, next_state_batch)
+        return losses
 
 def get_actor():
     actor_input = tf.keras.layers.Input(shape=(OBS_SPACE,))

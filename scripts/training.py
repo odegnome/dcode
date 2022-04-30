@@ -1,7 +1,7 @@
 import logging
 # Apply logging config.
 logging.basicConfig(
-    filename='logs/training.log',
+    filename='../logs/training.log',
     filemode='w',
     level=logging.INFO,
     format='%(levelname)s: %(message)s'
@@ -10,10 +10,13 @@ import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 from Env import QuadEnv, OUActionNoise, Buffer, get_actor, get_critic
-import pickle
 from sys import exit
+import pickle
+import os
 
-np.random.seed(103473)
+SEED = 103473
+
+np.random.seed(SEED)
 # Gives the shape of the observation space
 OBS_SPACE = 24
 # Gives the shape of the action space
@@ -22,11 +25,9 @@ ACTION_SPACE = 4
 LOWER_BOUND = 0.0
 UPPER_BOUND = 1.0
 
-def policy(state, noise_object):
+def policy(state):
     sampled_actions = tf.squeeze(actor_model(state))
-    noise = noise_object()
-    # Adding noise to action
-    sampled_actions = sampled_actions.numpy() + noise
+    sampled_actions = sampled_actions.numpy()
 
     # We make sure action is within bounds
     legal_action = np.clip(sampled_actions, LOWER_BOUND, UPPER_BOUND)
@@ -38,10 +39,15 @@ def update_target(target_weights, weights, tau):
     for (a, b) in zip(target_weights, weights):
         a.assign(b * tau + a * (1 - tau))
 
+# def main(*args, **kwargs):
 # Code for training
 env = QuadEnv('quad.xml')
-std_dev = 0.5
-ou_noise = OUActionNoise(mean=np.zeros(4), std_deviation=float(std_dev) * np.ones(4))
+
+# actor_model = tf.keras.models.load_model('../training/new/actor2000')
+# critic_model = tf.keras.models.load_model('../training/new/critic2000')
+
+# target_actor = tf.keras.models.load_model('../training/new/tactor2000')
+# target_critic = tf.keras.models.load_model('../training/new/tcritic2000')
 
 actor_model = get_actor()
 critic_model = get_critic()
@@ -60,13 +66,19 @@ actor_lr = 0.001
 critic_optimizer = tf.keras.optimizers.Adam(critic_lr)
 actor_optimizer = tf.keras.optimizers.Adam(actor_lr)
 
-MAX_EPISODES = 100
+rng = np.random.default_rng(seed=SEED)
+
+MAX_EPISODES = 1000
 MAX_EPISODE_LEN = 12000
 BATCH_SIZE = 64
 # Discount factor for future rewards
 gamma = 0.99
 # Used to update target networks
 tau = 0.005
+# Exploration eploitation tradeoff
+epsilon = 1
+# decay_rate = 0.999
+# Buffer to hold past observation
 buffer = Buffer(
         models=[actor_model, critic_model, target_actor, target_critic],
         optimizers=[actor_optimizer,critic_optimizer],
@@ -77,31 +89,43 @@ buffer = Buffer(
         batch_size=BATCH_SIZE
     )
 
+# logging results subdirectory
+subdir = '24-04'
+if not os.access(f'../training/{subdir}/', os.F_OK):
+    os.mkdir(f'../training/{subdir}/')
+if not os.access(f'../images/{subdir}/', os.F_OK):
+    os.mkdir(f'../images/{subdir}/')
+if not os.access(f'../logs/{subdir}/', os.F_OK):
+    os.mkdir(f'../logs/{subdir}/')
 # Running the experiment
 # To store reward history of each episode
 ep_reward_list = []
 # To store average reward history of last few episodes
 avg_reward_list = []
 # Lin acc and Ang vel data
-debug_info = []
+# debug_info = {'loss':[], 'info':[]} 
 for episode in range(MAX_EPISODES+1):
     prev_state = env.reset()
     episodic_reward = 0
-    for _ in range(MAX_EPISODE_LEN):
+    if epsilon < 0.1:
+        epsilon = 1
+    for timestep in range(MAX_EPISODE_LEN):
         tf_prev_state = tf.expand_dims(tf.convert_to_tensor(prev_state), 0)
         # Take random action or take action according to policy
-        action = policy(tf_prev_state, ou_noise)
+        if rng.random() < epsilon:
+            action = rng.normal(loc=0.0, scale=0.5, size=4)
+            epsilon *= gamma
+        else:
+            action = policy(tf_prev_state)
         # Recieve state and reward from environment.
         state, reward, done, info = env.step(action)
 
         buffer.record((prev_state, action, reward, state))
         episodic_reward += reward
 
-        # Record lin/ang acc or vel
-        debug_info.append(state[:6])
-        logging.info(f'info array: {len(debug_info)}')
-
-        buffer.learn()
+        current_loss = buffer.learn()
+        # debug_info['loss'].append(current_loss)
+        # logging.info(f'Ep*{episode}*time*{timestep}* critic={current_loss[0]}; actor={current_loss[1]}')
         update_target(target_actor.variables, actor_model.variables, tau)
         update_target(target_critic.variables, critic_model.variables, tau)
 
@@ -110,22 +134,23 @@ for episode in range(MAX_EPISODES+1):
         if done:
             break
 
-    if episode%100 == 0:
-        actor_model.save(f'training/temp/actor{episode}', save_format='tf')
-        critic_model.save(f'training/temp/critic{episode}', save_format='tf')
-        target_actor.save(f'training/temp/tactor{episode}', save_format='tf')
-        target_critic.save(f'training/temp/tcritic{episode}', save_format='tf')
-        plt.plot(avg_reward_list)
+    if episode%200 == 0:
+        actor_model.save(f'../training/{subdir}/actor{episode}', save_format='h5')
+        critic_model.save(f'../training/{subdir}/critic{episode}', save_format='h5')
+        target_actor.save(f'../training/{subdir}/tactor{episode}', save_format='h5')
+        target_critic.save(f'../training/{subdir}/tcritic{episode}', save_format='h5')
+        plt.plot(avg_reward_list, 'g-')
         plt.xlabel("Episode")
         plt.ylabel("Avg. Epsiodic Reward")
-        plt.savefig(f'images/temp/rewards{episode}.png')
+        plt.savefig(f'../images/{subdir}/rewards{episode}.png')
+        del ep_reward_list[:150]
 
     ep_reward_list.append(episodic_reward)
 
     # Mean of last 40 episodes
-    avg_reward = np.mean(ep_reward_list[-40:])
+    avg_reward = np.mean(ep_reward_list[-50:])
     print("Episode * {} * Avg Reward is ==> {} and Episode Reward ==> {}".format(episode, avg_reward, episodic_reward))
     avg_reward_list.append(avg_reward)
 
-with open('logs/info', 'wb') as fp:
-    pickle.dump(debug_info, fp)
+# with open('../logs/{subdir}/info', 'wb') as fp:
+#     pickle.dump(debug_info, fp)

@@ -4,9 +4,11 @@ import tensorflow as tf
 from Env import QuadEnv
 import os
 
+# ffmpeg -framerate 30 -pattern_type glob -i 'simulation/*.jpeg' video.mpg
+
 env = QuadEnv('quad.xml')
 
-actor = tf.keras.models.load_model('training/withinfo/actor500/')
+actor = tf.keras.models.load_model('../training/temp/actor500/')
 
 def get_action(state):
     tf_state = tf.expand_dims(tf.convert_to_tensor(state), 0)
@@ -17,8 +19,6 @@ def get_action(state):
 
 def sim_dir_cleanup():
     os.system('python3 clearsimulation.py')
-    if not os.access('simulation',os.F_OK):
-        os.mkdir('simulation')
 
 sim_dir_cleanup()
 framerate = 30
@@ -32,5 +32,5 @@ while not done:
     if count < env.physics.data.time * framerate:
         pixels = env.physics.render(height=720,width=1024,camera_id='fixed_camera')
         im = Image.fromarray(pixels)
-        im.save(f"simulation/frame{count:03}.jpeg")
+        im.save(f"../simulation/frame{count:03}.jpeg")
         count += 1
