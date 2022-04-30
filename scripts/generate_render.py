@@ -1,14 +1,14 @@
 from PIL import Image
 import numpy as np
 import tensorflow as tf
-from Env import QuadEnv
+from Env import QuadEnv, get_actor
 import os
 
 # ffmpeg -framerate 30 -pattern_type glob -i 'simulation/*.jpeg' video.mpg
 
 env = QuadEnv('quad.xml')
 
-actor = tf.keras.models.load_model('../training/temp/actor500/')
+actor = tf.keras.models.load_model('../training/30-04/actor600/')
 
 def get_action(state):
     tf_state = tf.expand_dims(tf.convert_to_tensor(state), 0)

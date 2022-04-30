@@ -3,8 +3,10 @@ import numpy as np
 import tensorflow as tf
 from dm_control.utils.transformations import quat_to_euler
 
-OBS_SPACE = 24
+OBS_SPACE = 23
 ACTION_SPACE = 4
+
+np.random.seed(103473)
 
 class QuadEnv:
     def __init__(self, xml_path):
@@ -14,17 +16,35 @@ class QuadEnv:
         self.physics.set_control(action)
         self.physics.step()
         done = True if self.physics.data.ncon > 0 else False
-        reward = 1 if not done else -1000
+        reward = self.get_reward()
         state = self.get_observation()
         return state, reward, done, []
     
     def get_reward(self):
-        return
+        # Penalise for orientation greater than pi/6
+        atitude = self.physics.data.xquat[6].copy()
+        euler = quat_to_euler(atitude)
+        norm = np.sqrt(np.sum(np.square(euler[:2])))
+        reward = norm if norm <= 0.740 else -norm
+
+        # Penalise if distance is less than 1
+        sensor_array = self.physics.data.sensordata[6:].copy()
+        sensor_array[:] = sensor_array/3
+        for index, x in enumerate(sensor_array):
+            if x<0.34:
+                sensor_array[index] = -14
+        reward += np.sum(sensor_array)
+
+        # Penalty for collision, also ends the episode
+        if self.physics.data.ncon > 0:
+            reward -= 10000
+        return reward
 
     def get_observation(self):
         # Observation
-        sensor_data = self.physics.data.sensordata
-        orientation = self.physics.data.xquat[6]
+        sensor_data = self.physics.data.sensordata.copy()
+        sensor_data[6:] = sensor_data[6:]/3
+        orientation = quat_to_euler(self.physics.data.xquat[6].copy())
         # velocities = self.physics.data.qvel
         state = np.concatenate((sensor_data, orientation))#, velocities))
         return state

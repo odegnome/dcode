@@ -27,12 +27,6 @@ class QuadObservables(composer.Observables):
         return observable.MJCFFeature('sensordata', range_sensors)
     
     @composer.observable
-    def joint_velocity(self):
-        """Adds linear and angular velocities of the quadrotor"""
-        velocities = self._entity.mjcf_model.find_all('joint')
-        return observable.MJCFFeature('qvel', velocities)
-    
-    @composer.observable
     def orientation(self):
         """Quaternion representation of orientation"""
         atitude = self._entity.mjcf_model.find('body', 'quad')
@@ -44,7 +38,6 @@ class FlyWithoutCollision(composer.Task):
         
         # Enable quadrotor observables
         self._quad.observables.sensor_values.enabled = True 
-        self._quad.observables.joint_velocity.enabled = True
         self._quad.observables.orientation.enabled = True
 
         # Arena

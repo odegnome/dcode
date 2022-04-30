@@ -18,16 +18,16 @@ SEED = 103473
 
 np.random.seed(SEED)
 # Gives the shape of the observation space
-OBS_SPACE = 24
+OBS_SPACE = 23
 # Gives the shape of the action space
 ACTION_SPACE = 4
 # Lower and upper bound of quadrotor actuators
 LOWER_BOUND = 0.0
 UPPER_BOUND = 1.0
 
-def policy(state):
+def policy(state, noise):
     sampled_actions = tf.squeeze(actor_model(state))
-    sampled_actions = sampled_actions.numpy()
+    sampled_actions = sampled_actions.numpy() + noise
 
     # We make sure action is within bounds
     legal_action = np.clip(sampled_actions, LOWER_BOUND, UPPER_BOUND)
@@ -42,6 +42,8 @@ def update_target(target_weights, weights, tau):
 # def main(*args, **kwargs):
 # Code for training
 env = QuadEnv('quad.xml')
+std_dev = 0.2
+ou_noise = OUActionNoise(mean=np.zeros(4), std_deviation=float(std_dev) * np.ones(4))
 
 # actor_model = tf.keras.models.load_model('../training/new/actor2000')
 # critic_model = tf.keras.models.load_model('../training/new/critic2000')
@@ -90,7 +92,7 @@ buffer = Buffer(
     )
 
 # logging results subdirectory
-subdir = '24-04'
+subdir = '30-04'
 if not os.access(f'../training/{subdir}/', os.F_OK):
     os.mkdir(f'../training/{subdir}/')
 if not os.access(f'../images/{subdir}/', os.F_OK):
@@ -103,20 +105,14 @@ ep_reward_list = []
 # To store average reward history of last few episodes
 avg_reward_list = []
 # Lin acc and Ang vel data
-# debug_info = {'loss':[], 'info':[]} 
+debug_info = {'loss':[], 'info':[]} 
 for episode in range(MAX_EPISODES+1):
     prev_state = env.reset()
     episodic_reward = 0
-    if epsilon < 0.1:
-        epsilon = 1
     for timestep in range(MAX_EPISODE_LEN):
         tf_prev_state = tf.expand_dims(tf.convert_to_tensor(prev_state), 0)
-        # Take random action or take action according to policy
-        if rng.random() < epsilon:
-            action = rng.normal(loc=0.0, scale=0.5, size=4)
-            epsilon *= gamma
-        else:
-            action = policy(tf_prev_state)
+        # action according to policy + noise
+        action = policy(tf_prev_state, ou_noise)
         # Recieve state and reward from environment.
         state, reward, done, info = env.step(action)
 
@@ -124,8 +120,7 @@ for episode in range(MAX_EPISODES+1):
         episodic_reward += reward
 
         current_loss = buffer.learn()
-        # debug_info['loss'].append(current_loss)
-        # logging.info(f'Ep*{episode}*time*{timestep}* critic={current_loss[0]}; actor={current_loss[1]}')
+        logging.info(f'Euler Angles: {state[-3:]}')
         update_target(target_actor.variables, actor_model.variables, tau)
         update_target(target_critic.variables, critic_model.variables, tau)
 
@@ -152,5 +147,5 @@ for episode in range(MAX_EPISODES+1):
     print("Episode * {} * Avg Reward is ==> {} and Episode Reward ==> {}".format(episode, avg_reward, episodic_reward))
     avg_reward_list.append(avg_reward)
 
-# with open('../logs/{subdir}/info', 'wb') as fp:
-#     pickle.dump(debug_info, fp)
+with open('../logs/{subdir}/info.pickle', 'wb') as fp:
+    pickle.dump(debug_info, fp)
