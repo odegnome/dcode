@@ -2,11 +2,14 @@ from dm_control import mujoco
 import numpy as np
 import tensorflow as tf
 from dm_control.utils.transformations import quat_to_euler
+from dm_control.mujoco.wrapper.mjbindings import mjlib
 
-OBS_SPACE = 23
+OBS_SPACE = 29
 ACTION_SPACE = 4
+SEED = 103473
 
-np.random.seed(103473)
+np.random.seed(SEED)
+rng = np.random.default_rng(SEED)
 
 class QuadEnv:
     def __init__(self, xml_path):
@@ -25,7 +28,7 @@ class QuadEnv:
         atitude = self.physics.data.xquat[6].copy()
         euler = quat_to_euler(atitude)
         norm = np.sqrt(np.sum(np.square(euler[:2])))
-        reward = norm if norm <= 0.740 else -norm
+        reward = -np.round(norm, 3)
 
         # Penalise if distance is less than 1
         sensor_array = self.physics.data.sensordata[6:].copy()
@@ -44,57 +47,33 @@ class QuadEnv:
         # Observation
         sensor_data = self.physics.data.sensordata.copy()
         sensor_data[6:] = sensor_data[6:]/3
-        orientation = quat_to_euler(self.physics.data.xquat[6].copy())
+        orientation = np.zeros(9)
+        mjlib.mju_quat2Mat(orientation, self.physics.data.xquat[6].copy())
         # velocities = self.physics.data.qvel
         state = np.concatenate((sensor_data, orientation))#, velocities))
         return state
     
     def reset(self):
-        controls = [
-            [0., 0., 0., 0., 0., 0.],
-            [0.0, 0.0, 0.0, 0.0, 2., 3.],
-            [0.36, 0.36, 0.33, 0.33, 2., 3.],
-            [0.33, 0.33, 0.36, 0.36, -2., 3.]
-        ]
-        index = np.random.randint(0,4)
+        # controls = [
+        #     [0., 0., 0., 0., 0., 0.],
+        #     [0.0, 0.0, 0.0, 0.0, 2., 3.],
+        #     [0.36, 0.36, 0.33, 0.33, 2., 3.],
+        #     [0.33, 0.33, 0.36, 0.36, -2., 3.]
+        # ]
+        # index = rng.integers(0,3, endpoint=True)
+        # with self.physics.reset_context():
+        #     self.physics.set_control(controls[index][0:4])
+        #     self.physics.data.qvel[1] = controls[index][4]
+        #     self.physics.data.qvel[2] = controls[index][5]
+        
         with self.physics.reset_context():
-            self.physics.set_control(controls[index][0:4])
-            self.physics.data.qvel[1] = controls[index][4]
-            self.physics.data.qvel[2] = controls[index][5]
+            self.physics.data.qvel[:] = rng.normal(0.0, 0.1, size=6)
 
         return self.get_observation()
     
     def render(self):
         return self.physics.render(height=720, width=1024, camera_id='fixed_camera')
 
-
-class OUActionNoise:
-    def __init__(self, mean, std_deviation, theta=0.15, dt=1e-2, x_initial=None):
-        self.theta = theta
-        self.mean = mean
-        self.std_dev = std_deviation
-        self.dt = dt
-        self.x_initial = x_initial
-        self.reset()
-
-    def __call__(self):
-        # Formula taken from https://www.wikipedia.org/wiki/Ornstein-Uhlenbeck_process.
-        x = (
-            self.x_prev
-            + self.theta * (self.mean - self.x_prev) * self.dt
-            + self.std_dev * np.sqrt(self.dt) * np.random.normal(size=self.mean.shape)
-        )
-        # Store x into x_prev
-        # Makes next noise dependent on current one
-        x = np.round(x, decimals=3)
-        self.x_prev = x
-        return x
-
-    def reset(self):
-        if self.x_initial is not None:
-            self.x_prev = self.x_initial
-        else:
-            self.x_prev = np.zeros_like(self.mean)
 
 class Buffer:
     def __init__(self, models, optimizers, gamma=0.99, OBS_SPACE=24,
@@ -172,7 +151,7 @@ class Buffer:
         self.actor_optimizer.apply_gradients(
             zip(actor_grad, self.actor_model.trainable_variables)
         )
-        return (critic_loss, actor_loss)
+        return critic_loss, actor_loss
         
     def learn(self):
         # Get sampling range
@@ -192,7 +171,8 @@ class Buffer:
 
 def get_actor():
     actor_input = tf.keras.layers.Input(shape=(OBS_SPACE,))
-    out = tf.keras.layers.Dense(64,activation='tanh')(actor_input)
+    out = tf.keras.layers.BatchNormalization()(actor_input)
+    out = tf.keras.layers.Dense(64,activation='tanh')(out)
     out = tf.keras.layers.Dense(64,activation='tanh')(out)
     output = tf.keras.layers.Dense(4)(out)
 
@@ -203,7 +183,8 @@ def get_critic():
     critic_input_1 = tf.keras.layers.Input(shape=(OBS_SPACE,))
     critic_input_2 = tf.keras.layers.Input(shape=(ACTION_SPACE,))
     critic_input = tf.keras.layers.Concatenate()([critic_input_1, critic_input_2])
-    out = tf.keras.layers.Dense(64,activation='tanh')(critic_input)
+    out = tf.keras.layers.BatchNormalization()(critic_input)
+    out = tf.keras.layers.Dense(64,activation='tanh')(out)
     out = tf.keras.layers.Dense(64,activation='tanh')(out)
     output = tf.keras.layers.Dense(1)(out)
 

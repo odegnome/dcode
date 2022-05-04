@@ -1,7 +1,17 @@
+import os
+
+subdir = '03-05'
+if not os.access(f'../training/{subdir}/', os.F_OK):
+    os.mkdir(f'../training/{subdir}/')
+if not os.access(f'../images/{subdir}/', os.F_OK):
+    os.mkdir(f'../images/{subdir}/')
+if not os.access(f'../logs/{subdir}/', os.F_OK):
+    os.mkdir(f'../logs/{subdir}/')
+
 import logging
 # Apply logging config.
 logging.basicConfig(
-    filename='../logs/training.log',
+    filename=f'../logs/{subdir}/training.log',
     filemode='w',
     level=logging.INFO,
     format='%(levelname)s: %(message)s'
@@ -9,16 +19,15 @@ logging.basicConfig(
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
-from Env import QuadEnv, OUActionNoise, Buffer, get_actor, get_critic
+from Env import QuadEnv, Buffer, get_actor, get_critic
 from sys import exit
 import pickle
-import os
 
 SEED = 103473
 
 np.random.seed(SEED)
 # Gives the shape of the observation space
-OBS_SPACE = 23
+OBS_SPACE = 29
 # Gives the shape of the action space
 ACTION_SPACE = 4
 # Lower and upper bound of quadrotor actuators
@@ -27,9 +36,10 @@ UPPER_BOUND = 1.0
 
 def policy(state, noise):
     sampled_actions = tf.squeeze(actor_model(state))
-    sampled_actions = sampled_actions.numpy() + noise
+    sampled_actions = sampled_actions.numpy()
+    sampled_actions += noise
 
-    # We make sure action is within bounds
+    # make sure action is within bounds
     legal_action = np.clip(sampled_actions, LOWER_BOUND, UPPER_BOUND)
 
     return np.squeeze(legal_action)
@@ -42,20 +52,19 @@ def update_target(target_weights, weights, tau):
 # def main(*args, **kwargs):
 # Code for training
 env = QuadEnv('quad.xml')
-std_dev = 0.2
-ou_noise = OUActionNoise(mean=np.zeros(4), std_deviation=float(std_dev) * np.ones(4))
+rng = np.random.default_rng(SEED)
 
-# actor_model = tf.keras.models.load_model('../training/new/actor2000')
-# critic_model = tf.keras.models.load_model('../training/new/critic2000')
+actor_model = tf.keras.models.load_model('../training/03-05/actor1000')
+critic_model = tf.keras.models.load_model('../training/03-05/critic1000')
 
-# target_actor = tf.keras.models.load_model('../training/new/tactor2000')
-# target_critic = tf.keras.models.load_model('../training/new/tcritic2000')
+target_actor = tf.keras.models.load_model('../training/03-05/tactor1000')
+target_critic = tf.keras.models.load_model('../training/03-05/tcritic1000')
 
-actor_model = get_actor()
-critic_model = get_critic()
+# actor_model = get_actor()
+# critic_model = get_critic()
 
-target_actor= get_actor()
-target_critic = get_critic()
+# target_actor= get_actor()
+# target_critic = get_critic()
 
 # Making the weights equal initially
 target_actor.set_weights(actor_model.get_weights())
@@ -70,16 +79,14 @@ actor_optimizer = tf.keras.optimizers.Adam(actor_lr)
 
 rng = np.random.default_rng(seed=SEED)
 
-MAX_EPISODES = 1000
-MAX_EPISODE_LEN = 12000
-BATCH_SIZE = 64
+EPISODE_START = 1001
+MAX_EPISODES = 2000
+MAX_EPISODE_LEN = 2000
+BATCH_SIZE = 128
 # Discount factor for future rewards
 gamma = 0.99
 # Used to update target networks
 tau = 0.005
-# Exploration eploitation tradeoff
-epsilon = 1
-# decay_rate = 0.999
 # Buffer to hold past observation
 buffer = Buffer(
         models=[actor_model, critic_model, target_actor, target_critic],
@@ -92,39 +99,37 @@ buffer = Buffer(
     )
 
 # logging results subdirectory
-subdir = '30-04'
-if not os.access(f'../training/{subdir}/', os.F_OK):
-    os.mkdir(f'../training/{subdir}/')
-if not os.access(f'../images/{subdir}/', os.F_OK):
-    os.mkdir(f'../images/{subdir}/')
-if not os.access(f'../logs/{subdir}/', os.F_OK):
-    os.mkdir(f'../logs/{subdir}/')
+
 # Running the experiment
 # To store reward history of each episode
 ep_reward_list = []
 # To store average reward history of last few episodes
 avg_reward_list = []
-# Lin acc and Ang vel data
-debug_info = {'loss':[], 'info':[]} 
-for episode in range(MAX_EPISODES+1):
+debug_info = {'loss':[], 'eulers':[], 'actions':[]}
+for episode in range(EPISODE_START, MAX_EPISODES+1):
     prev_state = env.reset()
     episodic_reward = 0
-    for timestep in range(MAX_EPISODE_LEN):
+    for _ in range(MAX_EPISODE_LEN):
         tf_prev_state = tf.expand_dims(tf.convert_to_tensor(prev_state), 0)
         # action according to policy + noise
-        action = policy(tf_prev_state, ou_noise)
+        noise = rng.normal(0.0, 0.3, size=4)
+        action = policy(tf_prev_state, noise)
         # Recieve state and reward from environment.
         state, reward, done, info = env.step(action)
 
         buffer.record((prev_state, action, reward, state))
         episodic_reward += reward
 
-        current_loss = buffer.learn()
-        logging.info(f'Euler Angles: {state[-3:]}')
+        critic_loss, actor_loss = buffer.learn()
+        # logging.info(f'Euler Angles: {state[-3:]}')
         update_target(target_actor.variables, actor_model.variables, tau)
         update_target(target_critic.variables, critic_model.variables, tau)
 
         prev_state = state
+
+        debug_info['loss'].append((critic_loss.numpy().copy(), actor_loss.numpy().copy()))
+        debug_info['eulers'].append(state[-3:].copy())
+        debug_info['actions'].append(action.copy())
         # End this episode when `done` is True
         if done:
             break
@@ -137,8 +142,12 @@ for episode in range(MAX_EPISODES+1):
         plt.plot(avg_reward_list, 'g-')
         plt.xlabel("Episode")
         plt.ylabel("Avg. Epsiodic Reward")
-        plt.savefig(f'../images/{subdir}/rewards{episode}.png')
+        plt.savefig(f'../images/{subdir}/rewards{episode}.png', transparent=True)
         del ep_reward_list[:150]
+        with open(f'../logs/{subdir}/info{episode}.pickle', 'w+b') as fp:
+            pickle.dump(debug_info, fp)
+        del debug_info
+        debug_info = {'loss':[], 'eulers':[], 'actions':[]}
 
     ep_reward_list.append(episodic_reward)
 
@@ -147,5 +156,3 @@ for episode in range(MAX_EPISODES+1):
     print("Episode * {} * Avg Reward is ==> {} and Episode Reward ==> {}".format(episode, avg_reward, episodic_reward))
     avg_reward_list.append(avg_reward)
 
-with open('../logs/{subdir}/info.pickle', 'wb') as fp:
-    pickle.dump(debug_info, fp)
