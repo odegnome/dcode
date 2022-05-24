@@ -21,14 +21,14 @@ class QuadEnv:
         done = True if self.physics.data.ncon > 0 else False
         reward = self.get_reward()
         state = self.get_observation()
-        return state, reward, done, []
+        return state, reward, done
     
     def get_reward(self):
         # Penalise for orientation greater than pi/6
         atitude = self.physics.data.xquat[6].copy()
         euler = quat_to_euler(atitude)
-        norm = np.sqrt(np.sum(np.square(euler[:2])))
-        reward = -np.round(norm, 3)
+        norm = np.round(np.sqrt(np.sum(np.square(euler[:2]))), 3)
+        reward = -norm
 
         # Penalise if distance is less than 1
         sensor_array = self.physics.data.sensordata[6:].copy()
@@ -40,7 +40,7 @@ class QuadEnv:
 
         # Penalty for collision, also ends the episode
         if self.physics.data.ncon > 0:
-            reward -= 10000
+            reward -= 5000
         return reward
 
     def get_observation(self):
@@ -54,20 +54,11 @@ class QuadEnv:
         return state
     
     def reset(self):
-        # controls = [
-        #     [0., 0., 0., 0., 0., 0.],
-        #     [0.0, 0.0, 0.0, 0.0, 2., 3.],
-        #     [0.36, 0.36, 0.33, 0.33, 2., 3.],
-        #     [0.33, 0.33, 0.36, 0.36, -2., 3.]
-        # ]
-        # index = rng.integers(0,3, endpoint=True)
-        # with self.physics.reset_context():
-        #     self.physics.set_control(controls[index][0:4])
-        #     self.physics.data.qvel[1] = controls[index][4]
-        #     self.physics.data.qvel[2] = controls[index][5]
-        
         with self.physics.reset_context():
-            self.physics.data.qvel[:] = rng.normal(0.0, 0.1, size=6)
+            self.physics.data.qpos[:2] = rng.normal(0.0, 1.0, size=2)
+            self.physics.data.qpos[2] = rng.uniform(2, 4)
+            self.physics.data.qvel[:] = rng.normal(0.0, 1.0, size=6)
+            # self.physics.data.qvel[3:] = rng.normal(0.0, 0.01, size=3)
 
         return self.get_observation()
     
