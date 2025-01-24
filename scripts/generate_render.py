@@ -1,6 +1,6 @@
 from PIL import Image
 import numpy as np
-# import tensorflow as tf
+import tensorflow as tf
 from Env import QuadEnv 
 import os
 import pickle
@@ -11,21 +11,21 @@ from dm_control.utils.transformations import quat_to_euler
 seed = 89343
 rng = np.random.default_rng(seed)
 def check_dir_access(testrun):
-    if not os.access(f'../random/{testrun}', os.F_OK):
-        os.mkdir(f'../random/{testrun}')
+    if not os.access(f'../testing/{testrun}', os.F_OK):
+        os.mkdir(f'../testing/{testrun}')
 
-    if not os.access(f'../random/{testrun}/frames', os.F_OK):
-        os.mkdir(f'../random/{testrun}/frames')
+    if not os.access(f'../testing/{testrun}/frames', os.F_OK):
+        os.mkdir(f'../testing/{testrun}/frames')
 
 env = QuadEnv('quad.xml')
 
-# actor = tf.keras.models.load_model('../training/03-05/actor10000')
+actor = tf.keras.models.load_model('../training/24-05/actor20000.h5')
 
 def get_action(state):
-    # tf_state = tf.expand_dims(tf.convert_to_tensor(state), 0)
-    # output = actor(tf_state, training=False)
-    action = rng.normal(0.5, 0.1, size=4)
-    action = np.clip(action, 0, 1)
+    tf_state = tf.expand_dims(tf.convert_to_tensor(state), 0)
+    output = actor(tf_state, training=False)
+    # action = rng.normal(0.5, 0.1, size=4)
+    action = np.clip(output.numpy(), 0, 1)
     return action
 
 
@@ -35,7 +35,7 @@ def get_action(state):
 # sim_dir_cleanup()
 framerate = 30
 
-for testrun in range(10):
+for testrun in range(10, 20):
     done = False
     state = env.reset()
     count = 0
@@ -51,8 +51,8 @@ for testrun in range(10):
         if count < env.physics.data.time * framerate:
             pixels = env.physics.render(height=720,width=1024,camera_id='fixed_camera')
             im = Image.fromarray(pixels)
-            im.save(f"../random/{testrun}/frames/frame{count:03}.jpeg")
+            im.save(f"../testing/{testrun}/frames/frame{count:03}.jpeg")
             count += 1
-    with open(f'../random/{testrun}/debug.pickle', 'w+b') as fp:
+    with open(f'../testing/{testrun}/debug.pickle', 'w+b') as fp:
         pickle.dump(debug_dict, fp)
     debug_dict.clear()

@@ -129,7 +129,7 @@ for episode in range(EPISODE_START, MAX_EPISODES+1):
     for _ in range(MAX_EPISODE_LEN):
         tf_prev_state = tf.expand_dims(tf.convert_to_tensor(prev_state), 0)
         # action according to policy + noise
-        noise = rng.normal(0.0, 0.1, size=4)
+        noise = rng.normal(0.0, 0.3, size=4)
         action = policy(tf_prev_state, noise)
         # Recieve state and reward from environment.
         state, reward, done = env.step(action)

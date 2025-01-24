@@ -55,7 +55,7 @@ class QuadEnv:
     
     def reset(self):
         with self.physics.reset_context():
-            self.physics.data.qpos[:2] = rng.normal(0.0, 1.0, size=2)
+            self.physics.data.qpos[:2] = rng.normal(0.0, 0.5, size=2)
             self.physics.data.qpos[2] = rng.uniform(2, 4)
             self.physics.data.qvel[:] = rng.normal(0.0, 1.0, size=6)
             # self.physics.data.qvel[3:] = rng.normal(0.0, 0.01, size=3)
